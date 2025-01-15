@@ -1,0 +1,39 @@
+name: go:release
+
+on:
+  push:
+    tags:
+    - 'v*'
+
+jobs:
+  go-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout commit
+      uses: actions/checkout@v4
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.23'
+    - name: Build terraform-provider-aws
+      env:
+        VERSION: ga
+      run: |-
+        export GOBIN=$(go env GOBIN)
+        export GOPATH=$(go env GOPATH)
+
+        export PATH=$PATH:$GOBIN
+
+        go mod download
+        CGO_ENABLED=0 GOOS=$(go env GOOS) GOARCH=$(go env GOARCH) go build \
+        -a \
+        -v \
+        -ldflags "$LD_FLAGS" \
+        -o ${GITHUB_WORKSPACE}/terraform-provider-aws \
+        main.go
+    - name: Store generated binary
+      uses: actions/upload-artifact@v4
+      with:
+        name: terraform-provider-aws.bin
+        path: terraform-provider-aws
